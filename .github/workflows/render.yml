@@ -1,0 +1,90 @@
+name: Render and publish stats SVG
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  STATSVG_USER: akshay2211
+  STATSVG_THEME: github_dark
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Render SVG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          ./target/release/statsvg-rs render \
+            --user "$STATSVG_USER" \
+            --theme "$STATSVG_THEME" \
+            --show-top-repos \
+            > "dist/${STATSVG_USER}.svg"
+
+      - name: Build landing page
+        run: |
+          cat > dist/index.html <<EOF
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>statsvg-rs — GitHub stats SVG</title>
+            <style>
+              body { font-family: -apple-system, system-ui, sans-serif; background: #0d1117; color: #c9d1d9; padding: 2rem; max-width: 760px; margin: 0 auto; line-height: 1.5; }
+              a { color: #58a6ff; }
+              img { max-width: 100%; height: auto; display: block; margin: 1.5rem 0; }
+              code, pre { background: #161b22; padding: 2px 8px; border-radius: 6px; font-size: 0.9em; }
+              pre { padding: 12px; overflow-x: auto; }
+              h1 { margin-bottom: 0.25rem; }
+              .meta { color: #7d8590; font-size: 0.9em; }
+            </style>
+          </head>
+          <body>
+            <h1>statsvg-rs</h1>
+            <p class="meta">GitHub stats card, rendered in Rust and re-generated every 6 hours via GitHub Actions.</p>
+            <img src="${STATSVG_USER}.svg" alt="GitHub stats for ${STATSVG_USER}">
+            <h2>Embed</h2>
+            <pre><code>![Stats](https://akshay2211.github.io/statsvg-rs/${STATSVG_USER}.svg)</code></pre>
+            <h2>Fork it for yourself</h2>
+            <p>Fork the repo, change <code>STATSVG_USER</code> in <code>.github/workflows/render.yml</code>, enable GitHub Pages (Settings → Pages → Source: <em>GitHub Actions</em>), and your card publishes to <code>&lt;you&gt;.github.io/statsvg-rs/&lt;you&gt;.svg</code>.</p>
+            <p class="meta">Source: <a href="https://github.com/akshay2211/statsvg-rs">github.com/akshay2211/statsvg-rs</a></p>
+          </body>
+          </html>
+          EOF
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: render
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
