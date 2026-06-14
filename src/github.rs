@@ -156,6 +156,7 @@ struct ContributionsCollection {
 #[serde(rename_all = "camelCase")]
 struct ContributionCalendar {
     total_contributions: u32,
+    #[serde(default)]
     weeks: Vec<ContributionWeek>,
 }
 
