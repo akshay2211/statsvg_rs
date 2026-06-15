@@ -2,8 +2,23 @@
 
 A Rust renderer that produces styled SVG GitHub stats cards and publishes them as static files via GitHub Pages — no servers, no hosting bills, no API rate limits to manage. A scheduled GitHub Action re-renders the cards every 6 hours.
 
+## Live demo
+
+These two SVGs are this repo's own output, re-rendered every 6 hours by the workflow:
+
+**`profile.svg`** — for embedding in any of your repo READMEs:
+
+![Profile card](https://akshay2211.github.io/statsvg_rs/profile.svg)
+
+**`stats.svg`** — for your profile README (anti-profile: lifetime totals, contributed-to repos, most-starred highlight):
+
+![Lifetime stats](https://akshay2211.github.io/statsvg_rs/stats.svg)
+
+Embed either with:
+
 ```markdown
 ![Stats](https://akshay2211.github.io/statsvg_rs/profile.svg)
+![Lifetime stats](https://akshay2211.github.io/statsvg_rs/stats.svg)
 ```
 
 ## Two variants, one workflow
